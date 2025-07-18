@@ -157,12 +157,9 @@ static void
 _pg_release_buffer_array(Py_buffer *);
 static void
 _pg_release_buffer_generic(Py_buffer *);
-static SDL_Window *
-pg_GetDefaultWindow(void);
-static void
-pg_SetDefaultWindow(SDL_Window *);
-static pgSurfaceObject *
-pg_GetDefaultWindowSurface(void);
+SDL_Window* pg_GetDefaultWindow(void);
+static void pg_SetDefaultWindow(SDL_Window *);
+pgSurfaceObject* pg_GetDefaultWindowSurface(void);
 static void
 pg_SetDefaultWindowSurface(pgSurfaceObject *);
 static char *
@@ -2239,8 +2236,7 @@ _pg_typestr_as_format(PyObject *sp, char *format, Py_ssize_t *itemsize_p)
  *
  * \return The default window, or *NULL* if no window has been created.
  */
-static SDL_Window *
-pg_GetDefaultWindow(void)
+SDL_Window* pg_GetDefaultWindow(void)
 {
     return pg_default_window;
 }
@@ -2271,12 +2267,28 @@ pg_SetDefaultWindow(SDL_Window *win)
  *
  * \return The default renderer, or *NULL* if no renderer has been created.
  */
-static pgSurfaceObject *
-pg_GetDefaultWindowSurface(void)
+pgSurfaceObject* pg_GetDefaultWindowSurface(void)
 {
     /* return a borrowed reference*/
     return pg_default_screen;
 }
+
+
+/*
+MY code
+*/
+static pgSurfaceObject *
+pg_GetNewWindowSurface(void)
+{
+    /* return a borrowed reference*/
+    return pg_default_screen;
+}
+static SDL_Window *
+pg_GetNewWindow(void)
+{
+    return pg_default_window;
+}
+
 
 /**
  * \brief Set the Pygame default window display surface. The previous
