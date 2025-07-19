@@ -868,11 +868,11 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
     _DisplayState *state = DISPLAY_MOD_STATE(self);
 
     //Assume that the window has not been set to make it make a new one
-    SDL_Window *win = pg_GetDefaultWindow();
+    //SDL_Window *win = NULL;//pg_GetDefaultWindow();
 
     //Assume it has not been set to make it make a new one
     //surface is reuturned into the window varaible in python
-    pgSurfaceObject *surface = pg_GetDefaultWindowSurface();
+    pgSurfaceObject *surface = NULL;//pg_GetDefaultWindowSurface();
 
     SDL_Surface* surf = NULL;
     //If new surface created this is set to surf
@@ -885,7 +885,7 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
     /* display will get overwritten by ParseTupleAndKeywords only if display
        parameter is given. By default, put the new window on the same
        screen as the old one */
-    int display = _get_display(win);
+    int display = 0;//_get_display(win);
     char *title = state->title;
     char *scale_env = SDL_getenv("PYGAME_FORCE_SCALE");
 
@@ -899,6 +899,19 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
         if (!pg_display_init(NULL, NULL))
             return NULL;
     }
+
+    //Create window
+    SDL_Window* win = SDL_CreateWindow("Window 1", 100, 100, 400, 300, SDL_WINDOW_SHOWN);
+    SDL_Renderer* renderer = SDL_CreateRenderer(win, -1, 0);
+
+    //
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // red
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
+
+
+    return (PyObject*)surface;
+
 
     state->using_gl = (flags & PGS_OPENGL) != 0;
     state->scaled_gl = state->using_gl && (flags & PGS_SCALED) != 0;
