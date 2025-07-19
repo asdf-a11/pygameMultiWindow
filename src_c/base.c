@@ -2274,21 +2274,6 @@ pgSurfaceObject* pg_GetDefaultWindowSurface(void)
 }
 
 
-/*
-MY code
-*/
-static pgSurfaceObject *
-pg_GetNewWindowSurface(void)
-{
-    /* return a borrowed reference*/
-    return pg_default_screen;
-}
-static SDL_Window *
-pg_GetNewWindow(void)
-{
-    return pg_default_window;
-}
-
 
 /**
  * \brief Set the Pygame default window display surface. The previous

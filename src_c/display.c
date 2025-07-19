@@ -815,13 +815,31 @@ _get_display(SDL_Window *win)
     return display;
 }
 
-static PyObject *
-pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
+#include <stdio.h>
+
+SDL_Window* pg_CreateNewWindow(char* title,int x, int y, int w_1, int h_1, Uint32 sdl_flags){
+    SDL_Window* win = NULL;
+    char *window_id = SDL_getenv("SDL_WINDOWID");
+    if (window_id) {
+        long long win_long = SDL_strtol(window_id, NULL, 0);
+        win = SDL_CreateWindowFrom((const void *)win_long);
+    }
+    else {
+        win = SDL_CreateWindow(title, x, y, w_1, h_1, sdl_flags);
+    }
+    return win;
+}
+//pgSurface* pg_CreateNewSurface(){
+
+//}
+
+PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
 {
     static const char *const DefaultTitle = "pygame window";
 
     _DisplayState *state = DISPLAY_MOD_STATE(self);
     SDL_Window *win = pg_GetDefaultWindow();
+    //surface = window varaible in python
     pgSurfaceObject *surface = pg_GetDefaultWindowSurface();
     SDL_Surface *surf = NULL;
     SDL_Surface *newownedsurf = NULL;
@@ -990,9 +1008,7 @@ pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
             if (win) {
                 if (SDL_GetWindowDisplayIndex(win) == display) {
                     // fullscreen windows don't hold window x and y as needed
-                    if (SDL_GetWindowFlags(win) &
-                        (SDL_WINDOW_FULLSCREEN |
-                         SDL_WINDOW_FULLSCREEN_DESKTOP)) {
+                    if (SDL_GetWindowFlags(win) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) {
                         x = state->fullscreen_backup_x;
                         y = state->fullscreen_backup_y;
 
@@ -1082,7 +1098,8 @@ pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
 
             if (!win) {
                 /*open window*/
-
+                //here
+                /*
                 char *window_id = SDL_getenv("SDL_WINDOWID");
                 if (window_id) {
                     long long win_long = SDL_strtol(window_id, NULL, 0);
@@ -1094,12 +1111,19 @@ pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
 
                 if (!win)
                     return RAISE(pgExc_SDLError, SDL_GetError());
+                */
+                win = pg_CreateNewWindow(title, x, y, w_1, h_1, sdl_flags);
+                if (!win)
+                    return RAISE(pgExc_SDLError, SDL_GetError());
             }
             else {
                 /* set min size to (1,1) to erase any previously set min size
                  * relevant for windows leaving SCALED, which sets a min size
                  * only relevant on Windows, I believe.
                  * See https://github.com/pygame/pygame/issues/2327 */
+                
+                printf("This code should not be running\n");
+
                 SDL_SetWindowMinimumSize(win, 1, 1);
 
                 /* change existing window.
