@@ -876,11 +876,11 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds){
     _DisplayState *state = DISPLAY_MOD_STATE(self);
 
     //Assume that the window has not been set to make it make a new one
-    SDL_Window* win = NULL;//pg_GetDefaultWindow();
+    SDL_Window* win = pg_GetDefaultWindow();
 
     //Assume it has not been set to make it make a new one
     //surface is reuturned into the window varaible in python
-    pgSurfaceObject* surface = NULL;//pg_GetDefaultWindowSurface();
+    pgSurfaceObject* surface = pg_GetDefaultWindowSurface();
 
     SDL_Surface* surf = NULL;
     //If new surface created this is set to surf
@@ -1305,7 +1305,7 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds){
                         pg_renderer, SDL_PIXELFORMAT_ARGB8888,
                         SDL_TEXTUREACCESS_STREAMING, w, h);
 
-                    //printf("Created render and texture when not opengl\n");
+                    printf("Created render and texture when not opengl\n");
                 }
                 surf = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32,
                                             0xff << 16, 0xff << 8, 0xff, 0);
