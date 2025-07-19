@@ -2253,10 +2253,10 @@ pg_SetDefaultWindow(SDL_Window *win)
 {
     /*Allows a window to be replaced by itself*/
     if (win == pg_default_window) {
-        return;
+        //return;
     }
     if (pg_default_window) {
-        SDL_DestroyWindow(pg_default_window);
+        //SDL_DestroyWindow(pg_default_window);
     }
     pg_default_window = win;
 }
@@ -2282,15 +2282,15 @@ pgSurfaceObject* pg_GetDefaultWindowSurface(void)
  *
  * \param screen The new default window display surface. May be NULL.
  */
-static void
-pg_SetDefaultWindowSurface(pgSurfaceObject *screen)
+static void pg_SetDefaultWindowSurface(pgSurfaceObject *screen)
 {
     /*a screen surface can be replaced with itself*/
     if (screen == pg_default_screen) {
         return;
     }
     Py_XINCREF(screen);
-    Py_XDECREF(pg_default_screen);
+    //Memory leak in python because not decrimenting the reference therefore not deleting memoryu when it should
+    //Py_XDECREF(pg_default_screen);
     pg_default_screen = screen;
 }
 

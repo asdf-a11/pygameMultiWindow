@@ -818,6 +818,7 @@ _get_display(SDL_Window *win)
 #include <stdio.h>
 
 SDL_Window* pg_CreateNewWindow(char* title,int x, int y, int w_1, int h_1, Uint32 sdl_flags){
+    static int xWindowPos = 100;
     SDL_Window* win = NULL;
     char *window_id = SDL_getenv("SDL_WINDOWID");
     if (window_id) {
@@ -825,7 +826,14 @@ SDL_Window* pg_CreateNewWindow(char* title,int x, int y, int w_1, int h_1, Uint3
         win = SDL_CreateWindowFrom((const void *)win_long);
     }
     else {
-        win = SDL_CreateWindow(title, x, y, w_1, h_1, sdl_flags);
+        printf("Creating new window not from\n");
+        win = SDL_CreateWindow(title, xWindowPos, y, w_1, h_1, sdl_flags);//x
+        if(win == pg_GetDefaultWindow()){
+            printf("Why is win equal to default window\n");
+        }
+        //Just to make sure it shows it, i dont know if it is necessarry
+        SDL_ShowWindow(win);
+        xWindowPos += 200;
     }
     return win;
 }
@@ -837,8 +845,9 @@ PyObject* ParseArgumentsForSetMode(PyObject* arg,PyObject* kwds,char* scale_env,
 {
     char *keywords[] = {"size", "flags", "depth", "display", "vsync", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(arg, kwds, "|Oiiii", keywords, size,
-                                     flags, depth, display, vsync))
+    if (!PyArg_ParseTupleAndKeywords(
+        arg, kwds, "|Oiiii", keywords, size, flags, depth, display, vsync)
+    )
         return NULL;
     if (scale_env != NULL) {
         *flags |= PGS_SCALED;
@@ -859,20 +868,19 @@ PyObject* ParseArgumentsForSetMode(PyObject* arg,PyObject* kwds,char* scale_env,
     return NULL;
 }
 
-PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
-{
+PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds){
     static const char* const DefaultTitle = "pygame window";
-
+    printf("---------set_mode executing------\n");
     //self is window object in python
     //state are attributes and stuff of the window
     _DisplayState *state = DISPLAY_MOD_STATE(self);
 
     //Assume that the window has not been set to make it make a new one
-    SDL_Window *win = pg_GetDefaultWindow();
+    SDL_Window* win = NULL;//pg_GetDefaultWindow();
 
     //Assume it has not been set to make it make a new one
     //surface is reuturned into the window varaible in python
-    pgSurfaceObject *surface = pg_GetDefaultWindowSurface();
+    pgSurfaceObject* surface = NULL;//pg_GetDefaultWindowSurface();
 
     SDL_Surface* surf = NULL;
     //If new surface created this is set to surf
@@ -928,11 +936,13 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
     state->toggle_windowed_h = 0;
 
     if (pg_texture) {
+        printf("Destroying texture\n");
         SDL_DestroyTexture(pg_texture);
         pg_texture = NULL;
     }
 
     if (pg_renderer) {
+        printf("Destroying renderer\n");
         SDL_DestroyRenderer(pg_renderer);
         pg_renderer = NULL;
     }
@@ -1001,8 +1011,8 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
                 SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
         }
 
-#pragma PG_WARN(Not setting bpp ?)
-#pragma PG_WARN(Add mode stuff.)
+//#pragma PG_WARN(Not setting bpp ?)
+//#pragma PG_WARN(Add mode stuff.)
         {
             int w_1 = w, h_1 = h;
             int scale = 1;
@@ -1124,8 +1134,12 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
                     return RAISE(pgExc_SDLError, SDL_GetError());
                 */
                 win = pg_CreateNewWindow(title, x, y, w_1, h_1, sdl_flags);
-                if (!win)
+                printf("Creating new window\n");
+                if (!win){
+                    printf("Failed creating new window\n");
                     return RAISE(pgExc_SDLError, SDL_GetError());
+                }
+                    
             }
             else {
                 /* set min size to (1,1) to erase any previously set min size
@@ -1169,6 +1183,7 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
 
         if (state->using_gl) {
             if (!state->gl_context) {
+                printf("Creating new surface\n");
                 state->gl_context = SDL_GL_CreateContext(win);
                 if (!state->gl_context) {
                     _display_state_cleanup(state);
@@ -1185,6 +1200,7 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
                 newownedsurf = surf;
             }
             else {
+                printf("Surface allready existed");
                 surf = pgSurface_AsSurface(surface);
             }
             if (flags & PGS_SCALED) {
@@ -1228,6 +1244,7 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
             }
         }
         else {
+            printf("Not using opengl\n");
             if (state->gl_context) {
                 SDL_GL_DeleteContext(state->gl_context);
                 state->gl_context = NULL;
@@ -1241,10 +1258,12 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
                                             "nearest", SDL_HINT_DEFAULT);
 
                     if (vsync) {
+                        printf("Render created vsync\n");
                         pg_renderer = SDL_CreateRenderer(
                             win, -1, SDL_RENDERER_PRESENTVSYNC);
                     }
                     else {
+                        printf("Render created non vsync\n");
                         pg_renderer = SDL_CreateRenderer(win, -1, 0);
                     }
 
@@ -1285,13 +1304,17 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
                     pg_texture = SDL_CreateTexture(
                         pg_renderer, SDL_PIXELFORMAT_ARGB8888,
                         SDL_TEXTUREACCESS_STREAMING, w, h);
+
+                    //printf("Created render and texture when not opengl\n");
                 }
                 surf = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32,
                                             0xff << 16, 0xff << 8, 0xff, 0);
                 newownedsurf = surf;
+                printf("Is scale and not opengl creating surf");
             }
             else {
                 surf = SDL_GetWindowSurface(win);
+                printf("Getting surface attached to window\n");
             }
         }
         if (state->gamma_ramp) {
@@ -1323,11 +1346,14 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
             goto DESTROY_WINDOW;
         }
         if (!surface) {
+            printf("Making new surface\n");
             surface = pgSurface_New2(surf, newownedsurf != NULL);
         }
         else {
+            printf("referncign older serface\n");
             pgSurface_SetSurface(surface, surf, newownedsurf != NULL);
             Py_INCREF(surface);
+            //surface = pgSurface_New2(surf, newownedsurf != NULL);
         }
         if (!surface) {
             if (newownedsurf)
@@ -1336,6 +1362,8 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
             goto DESTROY_WINDOW;
         }
 
+        printf("Setting default window and serfacen might be bad\n");
+
         /*no errors; make the window available*/
         pg_SetDefaultWindow(win);
         pg_SetDefaultWindowSurface(surface);
@@ -1343,7 +1371,7 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
 
         /* ensure window is always black after a set_mode call */
         SDL_FillRect(surf, NULL, SDL_MapRGB(surf->format, 0, 0, 0));
-        pg_flip_internal(state);
+        //pg_flip_internal(state);
     }
 
     /*set the window icon*/
@@ -1364,10 +1392,11 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
 
     /*return the window's surface (screen)*/
     Py_INCREF(surface);
+    printf("Returning as it should\n");
     return (PyObject *)surface;
 
 DESTROY_WINDOW:
-
+    printf("Destroying window\n");
     if (win == pg_GetDefaultWindow())
         pg_SetDefaultWindow(NULL);
     else if (win)
@@ -2254,6 +2283,7 @@ pg_toggle_fullscreen(PyObject *self, PyObject *_null)
                 pg_texture =
                     SDL_CreateTexture(pg_renderer, SDL_PIXELFORMAT_ARGB8888,
                                       SDL_TEXTUREACCESS_STREAMING, w, h);
+                //printf("Creating render and texture\n");
             }
             SDL_RenderSetLogicalSize(pg_renderer, w, h);
 
@@ -2388,6 +2418,7 @@ pg_toggle_fullscreen(PyObject *self, PyObject *_null)
                 pg_texture =
                     SDL_CreateTexture(pg_renderer, SDL_PIXELFORMAT_ARGB8888,
                                       SDL_TEXTUREACCESS_STREAMING, w, h);
+                //printf("Creating Render and texture 2\n");
             }
 
             SDL_RenderSetLogicalSize(pg_renderer, w, h);
