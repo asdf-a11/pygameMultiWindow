@@ -832,56 +832,67 @@ SDL_Window* pg_CreateNewWindow(char* title,int x, int y, int w_1, int h_1, Uint3
 //pgSurface* pg_CreateNewSurface(){
 
 //}
+PyObject* ParseArgumentsForSetMode(PyObject* arg,PyObject* kwds,char* scale_env, int* depth, int* flags, int* w, int* h, int* vsync, PyObject** size
+    ,int* display)
+{
+    char *keywords[] = {"size", "flags", "depth", "display", "vsync", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(arg, kwds, "|Oiiii", keywords, size,
+                                     flags, depth, display, vsync))
+        return NULL;
+    if (scale_env != NULL) {
+        *flags |= PGS_SCALED;
+        if (strcmp(scale_env, "photo") == 0) {
+            SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "best",
+                                    SDL_HINT_NORMAL);
+        }
+    }
+    //If size has been specified in set_mode call
+    if (*size != NULL) {
+        if (!pg_TwoIntsFromObj(*size, w, h))
+            return RAISE(PyExc_TypeError, "size must be two numbers");
+        if (*w < 0 || *h < 0)
+            return RAISE(pgExc_SDLError, "Cannot set negative sized display mode");
+    } else {
+        *w = 0; *h = 0;
+    }
+    return NULL;
+}
 
 PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
 {
-    static const char *const DefaultTitle = "pygame window";
+    static const char* const DefaultTitle = "pygame window";
 
+    //self is window object in python
+    //state are attributes and stuff of the window
     _DisplayState *state = DISPLAY_MOD_STATE(self);
+
+    //Assume that the window has not been set to make it make a new one
     SDL_Window *win = pg_GetDefaultWindow();
-    //surface = window varaible in python
+
+    //Assume it has not been set to make it make a new one
+    //surface is reuturned into the window varaible in python
     pgSurfaceObject *surface = pg_GetDefaultWindowSurface();
-    SDL_Surface *surf = NULL;
-    SDL_Surface *newownedsurf = NULL;
+
+    SDL_Surface* surf = NULL;
+    //If new surface created this is set to surf
+    SDL_Surface* newownedsurf = NULL;
     int depth = 0;
     int flags = 0;
     int w, h;
-    PyObject *size = NULL;
+    PyObject* size = NULL;
     int vsync = SDL_FALSE;
     /* display will get overwritten by ParseTupleAndKeywords only if display
        parameter is given. By default, put the new window on the same
        screen as the old one */
     int display = _get_display(win);
     char *title = state->title;
-    char *scale_env;
+    char *scale_env = SDL_getenv("PYGAME_FORCE_SCALE");
 
-    char *keywords[] = {"size", "flags", "depth", "display", "vsync", NULL};
-
-    scale_env = SDL_getenv("PYGAME_FORCE_SCALE");
-
-    if (!PyArg_ParseTupleAndKeywords(arg, kwds, "|Oiiii", keywords, &size,
-                                     &flags, &depth, &display, &vsync))
-        return NULL;
-
-    if (scale_env != NULL) {
-        flags |= PGS_SCALED;
-        if (strcmp(scale_env, "photo") == 0) {
-            SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY, "best",
-                                    SDL_HINT_NORMAL);
-        }
-    }
-
-    if (size != NULL) {
-        if (!pg_TwoIntsFromObj(size, &w, &h))
-            return RAISE(PyExc_TypeError, "size must be two numbers");
-        if (w < 0 || h < 0)
-            return RAISE(pgExc_SDLError,
-                         "Cannot set negative sized display mode");
-    }
-    else {
-        w = 0;
-        h = 0;
-    }
+    //Parse python typle to c values
+    PyObject* parseArgumentsReturn = ParseArgumentsForSetMode(arg, kwds,scale_env, &depth, &flags, &w, &h, &vsync, &size, &display);
+    if(parseArgumentsReturn != NULL)
+        return parseArgumentsReturn;
 
     if (!SDL_WasInit(SDL_INIT_VIDEO)) {
         /* note SDL works special like this too */
