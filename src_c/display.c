@@ -816,6 +816,9 @@ _get_display(SDL_Window *win)
 }
 
 #include <stdio.h>
+#define bool int
+#define false 0
+#define true 1
 
 SDL_Window* pg_CreateNewWindow(char* title,int x, int y, int w_1, int h_1, Uint32 sdl_flags){
     SDL_Window* win = NULL;
@@ -833,12 +836,12 @@ SDL_Window* pg_CreateNewWindow(char* title,int x, int y, int w_1, int h_1, Uint3
 
 //}
 PyObject* ParseArgumentsForSetMode(PyObject* arg,PyObject* kwds,char* scale_env, int* depth, int* flags, int* w, int* h, int* vsync, PyObject** size
-    ,int* display)
+    ,int* display, int* createAnotherWindow)
 {
-    char *keywords[] = {"size", "flags", "depth", "display", "vsync", NULL};
+    char *keywords[] = {"size", "flags", "depth", "display", "vsync", "createAnotherWindow", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(arg, kwds, "|Oiiii", keywords, size,
-                                     flags, depth, display, vsync))
+    if (!PyArg_ParseTupleAndKeywords(arg, kwds, "|Oiiiii", keywords, size,
+                                     flags, depth, display, vsync, createAnotherWindow))
         return NULL;
     if (scale_env != NULL) {
         *flags |= PGS_SCALED;
@@ -889,10 +892,28 @@ PyObject* pg_set_mode(PyObject *self, PyObject *arg, PyObject *kwds)
     char *title = state->title;
     char *scale_env = SDL_getenv("PYGAME_FORCE_SCALE");
 
+    int createAnotherWindow = false;
+
     //Parse python typle to c values
-    PyObject* parseArgumentsReturn = ParseArgumentsForSetMode(arg, kwds,scale_env, &depth, &flags, &w, &h, &vsync, &size, &display);
+    PyObject* parseArgumentsReturn = ParseArgumentsForSetMode(arg, kwds,
+        scale_env, &depth, &flags, &w, &h, &vsync, &size, &display, &createAnotherWindow);
     if(parseArgumentsReturn != NULL)
         return parseArgumentsReturn;
+    
+    if(createAnotherWindow){
+        printf("CreatingAnotherWindow\n");
+
+        SDL_Window* win = SDL_CreateWindow("SDL Example",  100,  120, 
+            300, 500, 0); 
+        //SDL_Renderer* renderer = SDL_CreateRenderer()
+        surf = SDL_GetWindowSurface(win);
+        SDL_FillRect(surf, NULL, SDL_MapRGB(surf->format, 0xFF, 0x00, 0x00));
+        SDL_UpdateWindowSurface(win);
+        //surface = pgSurface_NewNoOwn(surf);
+
+        //Py_INCREF(surface);
+        return (PyObject *)surface;
+    }
 
     if (!SDL_WasInit(SDL_INIT_VIDEO)) {
         /* note SDL works special like this too */
